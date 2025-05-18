@@ -14,6 +14,7 @@ import fs from 'fs';
 
 import { sequelize } from './models/index.js';
 import { SubscriptionController } from './controllers/subscription-controller.js';
+import { CustomErrorHandler } from './middlewares/custom-error-handler.js';
 import { WeatherController } from './controllers/weather-controller.js';
 import { initWeatherJobs } from './jobs/weather-jobs.js';
 
@@ -63,15 +64,14 @@ async function runMigrations() {
       const app = express();
   
       // 4) Middlewares
-      app.use(bodyParser.json());
-      app.use(bodyParser.urlencoded({ extended: true }));
       app.use('/', express.static(path.join(__dirname, '../public')));
   
       // 5) Setup routing-controllers
       useExpressServer(app, {
         routePrefix: '/api',
         controllers: [SubscriptionController, WeatherController],
-        defaultErrorHandler: true,
+        middlewares:  [ CustomErrorHandler ],
+        defaultErrorHandler: false,
       });
   
       // 6) Swagger/OpenAPI

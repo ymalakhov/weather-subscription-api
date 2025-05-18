@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
 
 export class EmailService {
   static async sendConfirmation(email: string, token: string) {
-    const confirmUrl = `http://${process.env.APP_HOST}/api/confirm/${token}`;
-    const unsubscribeUrl = `http://${process.env.APP_HOST}/api/unsubscribe/${token}`;
+    const confirmUrl = `${process.env.APP_BASE_URL}/api/confirm/${token}`;
+    const unsubscribeUrl = `${process.env.APP_BASE_URL}/api/unsubscribe/${token}`;
     const html = `
     <p>Please confirm your subscription by clicking 
       <a href="${confirmUrl}">here</a>.
