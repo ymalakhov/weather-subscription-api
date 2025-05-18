@@ -4,9 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Response } from 'express';
 import { EmailService } from '../services/email-service.js';
 
-console.log('EMAIL_FROM:', process.env.EMAIL_FROM, typeof process.env.EMAIL_FROM);
-console.log('EMAIL_PASS:', process.env.EMAIL_PASS, typeof process.env.EMAIL_PASS);
-
 @JsonController()
 export class SubscriptionController {
     @Post('/subscribe')

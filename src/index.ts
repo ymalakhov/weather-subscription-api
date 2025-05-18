@@ -1,8 +1,7 @@
 import 'reflect-metadata';
 import dotenv from 'dotenv';
 import path from 'path';
-// Load environment variables from .env.local (fallback to .env if not found)
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config();
 
 import express from 'express';
 import bodyParser from 'body-parser';

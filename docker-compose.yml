@@ -25,6 +25,18 @@ services:
     depends_on:
       postgres-db:
         condition: service_healthy
-
+    environment:
+      DB_HOST: postgres-db
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_PASS: ${EMAIL_PASS}
+      WEATHER_API_KEY: ${WEATHER_API_KEY}
+      APP_BASE_URL: ${APP_BASE_URL}
+      APP_PORT: ${APP_PORT}
+      TIMEZONE: ${TIMEZONE}
+      
 volumes:
   database-data:
