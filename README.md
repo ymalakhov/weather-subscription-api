@@ -98,6 +98,10 @@ This will bring up:
   ```
   http://localhost:3000/subscribe.html
   ```
+
+## 🌠 Examples of sent emails
+![alt text](images/image-2.png)
+![alt text](images/image-1.png)
 ---
 
 Enjoy your Weather Forecast API!
