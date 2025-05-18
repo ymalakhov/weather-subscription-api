@@ -49,13 +49,20 @@ PORT=3000
 ### 3. Start services
 
 For starting:
+* This command creates and starts the containers for all services defined in docker-compose.yml.
 ```bash
-docker-compose up -d # Сreate and start the containers for all services defined in docker-compose.yml.
-docker-compose up --build -d # If needed to re-build all images before containers starts
+docker-compose up -d
 ```
-For terminating:
+
+* If needed to re-build all images before containers starts
 ```bash
-docker-compose down # Stops and removes containers, networks, and volumes.
+docker-compose up --build -d
+```
+
+For terminating:
+* Stops and removes containers, networks, and volumes.
+```bash
+docker-compose down
 ```
 
 This will bring up:
