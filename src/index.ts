@@ -1,54 +1,105 @@
 import 'reflect-metadata';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+// Load environment variables from .env.local (fallback to .env if not found)
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-import { createExpressServer, getMetadataArgsStorage } from 'routing-controllers';
+import express from 'express';
+import bodyParser from 'body-parser';
+import { fileURLToPath } from 'url';
+import { useExpressServer, getMetadataArgsStorage } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
+import swaggerUi from 'swagger-ui-express';
+import { Umzug, SequelizeStorage } from 'umzug';
+import fs from 'fs';
+
 import { sequelize } from './models/index.js';
 import { SubscriptionController } from './controllers/subscription-controller.js';
 import { WeatherController } from './controllers/weather-controller.js';
 import { initWeatherJobs } from './jobs/weather-jobs.js';
-import swaggerUi from 'swagger-ui-express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import express from 'express';
-import bodyParser from 'body-parser';
-import { useExpressServer } from 'routing-controllers';
 
+// ESM __dirname shim
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-app.use('/', express.static(path.join(__dirname, '../public')));
-useExpressServer(app, {
-    routePrefix: '/api',
-    controllers: [SubscriptionController, WeatherController],
-});
+// Run SQL migrations via Umzug
+async function runMigrations() {
+    const umzug = new Umzug({
+      migrations: {
+        glob: path.join(__dirname, '../migrations/*.sql'),
+        resolve: ({ name, path: migrationPath }) => {
+          const fullPath = path.resolve(migrationPath!);
+          const sql = fs.readFileSync(fullPath, 'utf8');
+          return {
+            name,
+            up: async () => {
+              console.log(`🟢 Applying migration ${name}`);
+              await sequelize.query(sql);
+            },
+            down: async () => {
+              console.warn(`⚠️ Down not implemented for migration ${name}`);
+            }
+          };
+        }
+      },
+      context: sequelize.getQueryInterface(),
+      storage: new SequelizeStorage({ sequelize }),
+      logger: console
+    });
+  
+    await umzug.up();
+    console.log('✅ All migrations applied');
+  }
 
-const storage = getMetadataArgsStorage();
-const spec = routingControllersToSpec(
-    storage, { routePrefix: '/api' },
-    {
-        info: {
+  (async () => {
+    try {
+      // 1) Run migrations
+      await runMigrations();
+  
+      // 2) Connect to database
+      await sequelize.authenticate();
+      console.log('🌐 Database connected');
+  
+      // 3) Create Express app
+      const app = express();
+  
+      // 4) Middlewares
+      app.use(bodyParser.json());
+      app.use(bodyParser.urlencoded({ extended: true }));
+      app.use('/', express.static(path.join(__dirname, '../public')));
+  
+      // 5) Setup routing-controllers
+      useExpressServer(app, {
+        routePrefix: '/api',
+        controllers: [SubscriptionController, WeatherController],
+        defaultErrorHandler: true,
+      });
+  
+      // 6) Swagger/OpenAPI
+      const storage = getMetadataArgsStorage();
+      const spec = routingControllersToSpec(
+        storage,
+        { routePrefix: '/api' },
+        {
+          info: {
             title: 'Weather Forecast API',
             description: 'Weather API application that allows users to subscribe to weather updates for their city.',
-            version: '1.0.0'
-        },
-        servers: [
-            { url: `http://${process.env.APP_HOST || 'localhost:3000'}/api` }
-        ]
-    }
-);
-
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
-
-const PORT = process.env.PORT;
-sequelize.authenticate().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-        console.log(`Swagger UI available at http://localhost:${PORT}/docs`);
+            version: '1.0.0',
+          },
+          servers: [{ url: `${process.env.APP_BASE_URL}` }],
+        }
+      );
+      app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
+  
+      // 7) Start server and jobs
+      app.listen(process.env.APP_PORT, () => {
+        console.log(`🚀 Server running at ${process.env.APP_BASE_URL}`);
+        console.log(`📖 Swagger UI available at ${process.env.APP_BASE_URL}/docs`);
+        console.log(`📝 Subscription form: ${process.env.APP_BASE_URL}/subscribe.html`);
         initWeatherJobs();
-    });
-}).catch(err => {
-    console.error('Unable to connect to the database:', err);
-});
+      });
+    } catch (err) {
+      console.error('❌ Fatal error on startup:', err);
+      process.exit(1);
+    }
+  })();
