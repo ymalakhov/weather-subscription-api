@@ -29,13 +29,34 @@
       max-width: 400px;
       width: 100%;
       padding: 2rem;
-      position: fixed;
+      position: relative;
     }
 
     .card h1 {
       font-size: 1.5rem;
       margin-bottom: 1.5rem;
       text-align: center;
+    }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: none;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .form-group {
@@ -84,14 +105,11 @@
       position: fixed;
       top: 1rem;
       right: 1rem;
-      left: auto;
-      bottom: auto;
       padding: 1rem;
       border-radius: 4px;
       font-size: .95rem;
       display: none;
       z-index: 9999;
-      /* поверх всього */
       max-width: calc(100% - 2rem);
     }
 
@@ -107,7 +125,6 @@
       border: 1px solid #f5c6cb;
     }
 
-
     .error-msg {
       color: #dc3545;
       font-size: .875rem;
@@ -115,31 +132,30 @@
       display: none;
     }
 
-    .was-validated .error-msg {
+    /* Show error-msg only for invalid fields when validated */
+    .was-validated .form-group input:invalid~.error-msg,
+    .was-validated .form-group select:invalid~.error-msg {
       display: block;
     }
   </style>
 </head>
 
 <body>
-
   <div id="alert"></div>
-
   <div class="card">
     <h1>Weather Subscription</h1>
+    <div class="loader" id="loader"></div>
     <form id="subForm" class="needs-validation" novalidate>
       <div class="form-group">
         <label for="email">Email address</label>
         <input id="email" name="email" type="email" required placeholder="you@example.com" />
         <div class="error-msg">Please enter a valid email.</div>
       </div>
-
       <div class="form-group">
         <label for="city">City</label>
         <input id="city" name="city" type="text" required placeholder="e.g. Kyiv" />
         <div class="error-msg">City is required.</div>
       </div>
-
       <div class="form-group">
         <label for="frequency">Frequency</label>
         <select id="frequency" name="frequency" required>
@@ -149,54 +165,31 @@
         </select>
         <div class="error-msg">Please choose a frequency.</div>
       </div>
-
       <button class="btn" type="submit">Subscribe</button>
     </form>
   </div>
-
   <script>
     const form = document.getElementById('subForm');
-    const alert = document.getElementById('alert');
-
+    const alertEl = document.getElementById('alert');
+    const loader = document.getElementById('loader');
+    const submitBtn = form.querySelector('button');
     form.addEventListener('submit', async e => {
       e.preventDefault();
       form.classList.add('was-validated');
       if (!form.checkValidity()) return;
-
-      const data = {
-        email: form.email.value,
-        city: form.city.value,
-        frequency: form.frequency.value
-      };
-
+      const data = { email: form.email.value, city: form.city.value, frequency: form.frequency.value };
+      loader.style.display = 'block'; submitBtn.disabled = true;
       try {
-        const res = await fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
+        const url = `/api/subscribe?email=${encodeURIComponent(data.email)}&city=${encodeURIComponent(data.city)}&frequency=${encodeURIComponent(data.frequency)}`;
+        const res = await fetch(url, { method: 'POST' });
         const json = await res.json();
-
-        if (res.ok) {
-          showAlert('success', json.message || 'Subscribed successfully!');
-          form.reset();
-          form.classList.remove('was-validated');
-        } else {
-          showAlert('error', json.message || 'Something went wrong.');
-        }
-      } catch (err) {
-        showAlert('error', err.message || 'Network error.');
-      }
+        showAlert(res.ok ? 'success' : 'error', json.message || (res.ok ? 'Subscribed!' : 'Error'));
+        if (res.ok) { form.reset(); form.classList.remove('was-validated'); }
+      } catch (err) { showAlert('error', err.message || 'Network error.'); }
+      finally { loader.style.display = 'none'; submitBtn.disabled = false; }
     });
-
-    function showAlert(type, msg) {
-      alert.className = type;
-      alert.textContent = msg;
-      alert.style.display = 'block';
-      setTimeout(() => alert.style.display = 'none', 5000);
-    }
+    function showAlert(type, msg) { alertEl.className = type; alertEl.textContent = msg; alertEl.style.display = 'block'; setTimeout(() => alertEl.style.display = 'none', 5000); }  
   </script>
-
 </body>
 
 </html>

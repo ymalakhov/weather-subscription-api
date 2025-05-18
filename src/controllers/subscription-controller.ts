@@ -1,20 +1,34 @@
-import { JsonController, Post, Get, Param, BodyParam, Res } from 'routing-controllers';
+import { JsonController, Post, Get, Param, QueryParam, Res, BadRequestError } from 'routing-controllers';
 import { Subscription, sequelize } from '../models/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Response } from 'express';
 import { EmailService } from '../services/email-service.js';
+import { WeatherService } from '../services/weather-service.js';
 
 @JsonController()
 export class SubscriptionController {
     @Post('/subscribe')
     async subscribe(
-        @BodyParam('email', { required: true }) email: string,
-        @BodyParam('city', { required: true }) city: string,
-        @BodyParam('frequency', { required: true }) frequency: 'hourly' | 'daily',
+        @QueryParam('email', { required: true }) email: string,
+        @QueryParam('city', { required: true }) city: string,
+        @QueryParam('frequency', { required: true }) frequency: 'hourly' | 'daily',
         @Res() res: Response
     ) {
-        if (!email || !city || !['hourly', 'daily'].includes(frequency)) {
-            return res.status(400).json({ message: "Invalid input" });
+        // Basic input validation
+        if (!['hourly', 'daily'].includes(frequency) || !email || !city) {
+            throw new BadRequestError('Invalid input');
+        }
+        // City name characters validation
+        const CITY_RE = /^[A-Za-z\s]+$/;
+        if (!CITY_RE.test(city)) {
+            throw new BadRequestError('Invalid city name. Only letters and spaces allowed.');
+        }
+
+        // Check city exists via WeatherService
+        try {
+            await WeatherService.getCurrentWeather(city);
+        } catch (err: any) {
+            throw new BadRequestError('Invalid input city name');
         }
 
         const t = await sequelize.transaction();
