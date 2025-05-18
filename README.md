@@ -9,7 +9,15 @@ A Node.js/TypeScript service for subscribing to weather updates via email. Uses 
 3. **Server boot**: Initializes Express, routing-controllers, static assets, and Swagger UI.
 4. **Job scheduling**: Schedules hourly and daily email jobs via node-cron.
 
-## 🚀 Local Setup with Docker
+## ☁️ Cloud running
+
+The application is deployed on [Render](https://render.com) and can be accessed here:
+
+https://weather-subscription-api-isl6.onrender.com/docs
+
+https://weather-subscription-api-isl6.onrender.com/subscribe.html
+
+## 🚀 Local running with Docker
 
 ### 1. Clone the repository
 
@@ -90,15 +98,6 @@ This will bring up:
   ```
   http://localhost:3000/subscribe.html
   ```
-
-## ☁️ Deployed on Render
-
-The application is also deployed on [Render](https://render.com) and can be accessed here:
-
-https://weather-subscription-api-isl6.onrender.com/docs
-
-https://weather-subscription-api-isl6.onrender.com/subscribe.html
-
 ---
 
 Enjoy your Weather Forecast API!
